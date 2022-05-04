@@ -1,0 +1,29 @@
+node {
+// see below links in pipeline script under global variables
+echo "the job name is: ${env.JOB_NAME}"
+echo "the node name is: ${env.node_NAME}"
+
+def mavenHome = tool name: 'maven-3.8.5'
+stage('checkout'){
+git branch: 'development', credentialsId: '9c7f78f7-5177-419a-af17-8071acc0ee3d', url: 'https://github.com/yaswitha1/maven-web-application.git'
+}
+//  build using maven tool
+stage('build'){
+sh "${mavenHome}/bin/mvn clean package"
+}
+// execute sonarqube report
+stage('execute sonarqube report'){
+sh "${mavenHome}/bin/mvn sonar:sonar"
+}
+// upload artifacts to artifact repo
+stage('upload artifactory'){
+sh "${mavenHome}/bin/mvn deploy"
+}
+// below link from copy content in pem file and paste in pipiline syntax -> scripts->choosee ssh agent-> paste content in private key and give user name as ec2-user-> generate pipeline syntax
+stage('deploy into tomcat'){
+sshagent(['52e2254e-71d3-4b12-8c0b-4314b28376d3']){
+    // some block
+sh "  scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@3.110.154.215:/opt/apache-tomcat-9.0.62/webapps"
+}
+}
+}
