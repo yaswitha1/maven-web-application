@@ -24,14 +24,15 @@ def sendSlackNotifications(String buildStatus = 'STARTED') {
   slackSend (color: colorCode, message: summary)
 }
 
-node('slaves'){
+node {
+// see below links in pipeline script under global variables
+echo "the job name is: ${env.JOB_NAME}"
+echo "the node name is: ${env.node_NAME}"
 
-echo "Job Name is:  ${env.JOB_NAME}"
-echo "Node name is:  ${env.NODE_NAME}"
-
-properties([buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '5', daysToKeepStr: '', numToKeepStr: '5')), [$class: 'JobLocalConfiguration', changeReasonComment: ''], pipelineTriggers([pollSCM('* * * * *')])])
-
-def mavenHome = tool name: 'maven3.8.5'
+def mavenHome = tool name: 'maven-3.8.5'
+stage('checkout'){
+git branch: 'development', credentialsId: '9c7f78f7-5177-419a-af17-8071acc0ee3d', url: 'https://github.com/yaswitha1/maven-web-application.git'
+}
 
 try{
 
