@@ -1,31 +1,76 @@
-node {
-// see below links in pipeline script under global variables
-echo "the job name is: ${env.JOB_NAME}"
-echo "the node name is: ${env.node_NAME}"
-properties([buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '5', daysToKeepStr: '', numToKeepStr: '5')), [$class: 'JobLocalConfiguration', changeReasonComment: ''], pipelineTriggers([pollSCM('* * * * *')])])
-def mavenHome = tool name: 'maven-3.8.5'
-stage('checkout'){
-git branch: 'development', credentialsId: '9c7f78f7-5177-419a-af17-8071acc0ee3d', url: 'https://github.com/yaswitha1/maven-web-application.git'
+def sendSlackNotifications(String buildStatus = 'STARTED') {
+ 
+  buildStatus =  buildStatus ?: 'SUCCESS'
+
+  // Default values
+  def colorName = 'RED'
+  def colorCode = '#FF0000'
+  def subject = "${buildStatus}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
+  def summary = "${subject} (${env.BUILD_URL})"
+
+  // Override default values based on build status
+  if (buildStatus == 'STARTED') {
+    color = 'YELLOW'
+    colorCode = '#FFFF00'
+  } else if (buildStatus == 'SUCCESS') {
+    color = 'GREEN'
+    colorCode = '#00FF00'
+  } else {
+    color = 'RED'
+    colorCode = '#FF0000'
+  }
+
+  // Send notifications
+  slackSend (color: colorCode, message: summary)
 }
-//  build using maven tool
-stage('build'){
+
+node('slaves'){
+
+echo "Job Name is:  ${env.JOB_NAME}"
+echo "Node name is:  ${env.NODE_NAME}"
+
+properties([buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '5', daysToKeepStr: '', numToKeepStr: '5')), [$class: 'JobLocalConfiguration', changeReasonComment: ''], pipelineTriggers([pollSCM('* * * * *')])])
+
+def mavenHome = tool name: 'maven3.8.5'
+
+try{
+
+sendSlackNotifications('STARTED')
+
+//Get the code from GithUb Repo
+stage('CheckoutCode'){
+git branch: 'development', credentialsId: '2a72fc75-0e3b-4f0f-a5e9-66f563ac58ec', url: 'https://github.com/MithunTechnologiesDevOps/maven-web-application.git'
+}
+//Do the build by using Maven Build tool
+stage('Build'){
 sh "${mavenHome}/bin/mvn clean package"
 }
 /*
-// execute sonarqube report
-stage('execute sonarqube report'){
+//Execute the SonarQube Report
+stage('ExecuteSonarQubeReport'){
 sh "${mavenHome}/bin/mvn sonar:sonar"
 }
-// upload artifacts to artifact repo
-stage('upload artifactory'){
+
+//Upload Artifacts into Artifactory Repo
+stage('UploadArtifactsintoNexus'){
 sh "${mavenHome}/bin/mvn deploy"
 }
-// below link from copy content in pem file and paste in pipiline syntax -> scripts->choosee ssh agent-> paste content in private key and give user name as ec2-user-> generate pipeline syntax
-stage('deploy into tomcat'){
-sshagent(['52e2254e-71d3-4b12-8c0b-4314b28376d3']){
-    // some block
-sh "  scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@3.110.154.215:/opt/apache-tomcat-9.0.62/webapps"
+
+//Deploy Application into Tomcat Server
+stage('DeployApplicationIntoTomcatServer'){
+sshagent(['38c6d484-28b7-47fd-9099-ec2ecc2311b7']) {
+   sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@13.235.74.33:/opt/apache-tomcat-9.0.62/webapps/"
 }
+
 }
 */
+}//Try CLosing
+  catch(e){
+  currentBuild.result = "FAILED"
+  }
+  finally{
+
+sendSlackNotifications(currentBuild.result)
 }
+}//Node Closing
+
