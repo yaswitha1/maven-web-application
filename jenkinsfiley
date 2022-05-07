@@ -40,7 +40,7 @@ sendSlackNotifications('STARTED')
 
 //Get the code from GithUb Repo
 stage('CheckoutCode'){
-git branch: 'development', credentialsId: '2a72fc75-0e3b-4f0f-a5e9-66f563ac58ec', url: 'https://github.com/MithunTechnologiesDevOps/maven-web-application.git'
+git branch: 'development', credentialsId: '9c7f78f7-5177-419a-af17-8071acc0ee3d', url: 'https://github.com/yaswitha1/maven-web-application.git'
 }
 //Do the build by using Maven Build tool
 stage('Build'){
