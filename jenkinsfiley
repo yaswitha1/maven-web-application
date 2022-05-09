@@ -24,7 +24,7 @@ def sendSlackNotifications(String buildStatus = 'STARTED') {
   slackSend (color: colorCode, message: summary)
 }
 
-node {
+node ('slaves'){
 // see below links in pipeline script under global variables
 echo "the job name is: ${env.JOB_NAME}"
 echo "the node name is: ${env.node_NAME}"
